@@ -3,7 +3,8 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 // const encrypt = require("mongoose-encryption");
-const md5 = require("md5");
+// const md5 = require("md5");
+const bcrypt = require("bcrypt");
 
 const app = express();
 app.set("view engine", "ejs");
@@ -32,6 +33,8 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema);
 
+const saltRounds = 12;
+
 mongoose.connect(url).catch((err)=>{
     console.log(err);
 });
@@ -43,38 +46,47 @@ app.get("/", (req, res)=>{
 app.post("/signup", (req, res)=>{
     const name = req.body.name;
     const email = req.body.email;
-    const password = md5(req.body.password);
 
-    const user = new User({
-        name: name,
-        email: email,
-        password: password
-    });
-
-    user.save((err)=>{
+    bcrypt.hash(req.body.password, saltRounds, (err, password)=>{
         if (err){
             console.log(err);
         }
         else {
-            res.send("Perfecto!");
+            const user = new User({
+                name: name,
+                email: email,
+                password: password
+            });
+        
+            user.save((err)=>{
+                if (err){
+                    console.log(err);
+                }
+                else {
+                    res.send("Perfecto!");
+                }
+            });
         }
     });
 });
 
 app.post("/signin", (req, res)=>{
     const email = req.body.email;
-    const password = md5(req.body.password);
 
     User.findOne({email: email}, (err, user)=>{
         if (err){
             console.log(err);
         }
         else {
-            if (password === user.password){
-                res.send("Perfecto!");
-            }
-            else {
-                res.redirect("/");
+            if (user){
+                bcrypt.compare(req.body.password, user.password, (err, result)=>{
+                    if (result){
+                        res.send("Perfecto!");
+                    }
+                    else {
+                        res.redirect("/");
+                    }
+                });
             }
         }
     });
