@@ -1,3 +1,4 @@
+require("dotenv").config()
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
@@ -8,7 +9,7 @@ app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
 
-const url = "mongodb://localhost:27017/userDB";
+const url = process.env.DB_URL;
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -26,8 +27,7 @@ const userSchema = new mongoose.Schema({
     }
 });
 
-let secret = "ThisStringIsUnguessable.";
-userSchema.plugin(encrypt, {secret: secret, encryptedFields: ["password"]});
+userSchema.plugin(encrypt, {secret: process.env.SECRET, encryptedFields: ["password"]});
 
 const User = mongoose.model("User", userSchema);
 
